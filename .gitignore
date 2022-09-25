@@ -32,3 +32,9 @@ nbactions.xml
 nb-configuration.xml
 .nb-gradle/
 /controladorSemaforico/nbproject/private/
+
+*.attach*
+
+/out
+/nbproject
+/.idea
