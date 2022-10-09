@@ -4,52 +4,40 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.DataInput;
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class Servidor extends JFrame implements Runnable{
+public class Servidor{
+    private ServerSocket server;
+    private Socket cliente;
+    private int puerto;
+    private DataInputStream datosEntrada;
+    private DataOutputStream datosSalida;
+    private boolean conectarActivo;
 
-    private  JTextArea areaTexto;
-    public Servidor(){
-        setBounds(1200, 300, 400, 350);
-        JPanel panel = new JPanel();
-
-        panel.setLayout(new BorderLayout());
-
-        areaTexto = new JTextArea();
-
-        panel.add(areaTexto, BorderLayout.CENTER);
-
-        add(areaTexto);
-
-        setVisible(true);
-
-        Thread thread = new Thread(this);
-        thread.start();
+    public Servidor() {
+        puerto = 5000;
+        conectarActivo = true;
     }
 
-    @Override
-    public void run() {
-        //System.out.println("estoy escuchando");
-        try {
-            ServerSocket servidor = new ServerSocket(9999);
+    public void conectar() throws IOException {
 
-            while(true){
-                Socket suck = servidor.accept();
+        // Crear el servidor
+        server = new ServerSocket(puerto);
 
-                DataInputStream flujo_entrada = new DataInputStream(suck.getInputStream());
-
-                String msg_entrada = flujo_entrada.readUTF();
-
-                areaTexto.append("\n mensaje recibido: "+ msg_entrada);
-
-                suck.close();
-            }
-
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        while(conectarActivo){
+            // Esperar a que alguien se conecte
+            cliente = server.accept();
+            // Alguien se conectó
+            //datosEntrada = new DataInputStream(cliente.getInputStream());
+            datosSalida = new DataOutputStream(cliente.getOutputStream());
+            datosSalida.writeInt(14);
+            datosSalida.close();
+            server.close();
+            System.out.println("Conexion terminada");
         }
-    }
 
+    }
 }
