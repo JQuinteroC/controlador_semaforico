@@ -3,8 +3,6 @@ package src;
 import org.json.simple.JSONArray;
 
 import javax.swing.*;
-import java.awt.*;
-import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -12,6 +10,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.TimerTask;
 
 public class Servidor{
     private ServerSocket server;
@@ -26,10 +25,12 @@ public class Servidor{
     public Servidor() {
         puerto = 5000;
         conectarActivo = true;
-        try {
-            readJSON.readFile("src/datos/prueba.json");
-            config = readJSON.getPrimerMensaje();
+        Timer timer = new Timer(1,null);
 
+        try {
+            readJSON.readFile("src/datos/data13-41.json");
+            config = readJSON.getPrimerMensaje();
+            enviarRutinaConexion('0');
             //readJSON.getRutinaPlan();
             //readJSON.getRutinaDesconexion();
         }catch(Exception e) {
@@ -38,18 +39,40 @@ public class Servidor{
         }
     }
 
-    public void enviarRutinaConexion() throws IOException {
+    public void enviarRutinaConexion(char seg) throws IOException {
         ArrayList<JSONArray> arr = readJSON.getRutinaConexion();
-        Iterator iterator = arr.iterator();
+        JSONArray instrucciones1 = arr.get(0);
+        JSONArray instrucciones2 = arr.get(1);
+
+        Iterator iterator1 = instrucciones1.iterator();
+        Iterator iterator2 = instrucciones2.iterator();
+
+        String dato = "";
+
+        String cod1 = buscarCodigo(iterator1, seg);
+        String cod2 = buscarCodigo(iterator2, seg);
+
+        if(cod1!=""){
+            cod1 = cod1.replaceAll("^.","1");
+            dato += cod1;
+        }
+
+        if(cod2!=""){
+            cod2 = cod2.replaceAll("^.","2");
+            dato += "-"+cod2;
+        }
+
+        System.out.println(dato);
+    }
+
+    public String buscarCodigo(Iterator iterator, char number){
         while(iterator.hasNext()){
-            JSONArray aux = (JSONArray) iterator.next();
-            Iterator auxIterator = aux.iterator();
-            while (auxIterator.hasNext()){
-                String codigo = auxIterator.next().toString();
-                System.out.println(codigo);
-                datosSalida.writeUTF(codigo);
+            String codigo = iterator.next().toString();
+            if(codigo.charAt(0)==number){
+                return codigo;
             }
         }
+        return "";
     }
 
     public void conectar() throws IOException {
@@ -62,14 +85,19 @@ public class Servidor{
             cliente = server.accept();
             // Alguien se conectó
             //datosEntrada = new DataInputStream(cliente.getInputStream());
+            // reciba valor del cliente para desconectar
             datosSalida = new DataOutputStream(cliente.getOutputStream());
             datosSalida.writeUTF(config);
-            enviarRutinaConexion();
+            enviarRutinaConexion('0');
             datosSalida.writeInt(14);
             datosSalida.close();
             server.close();
             System.out.println("Conexion terminada");
         }
+
+    }
+
+    public void run(){
 
     }
 }
