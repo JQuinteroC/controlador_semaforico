@@ -11,6 +11,8 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.TimerTask;
+import java.util.Timer;
 
 
 public class Servidor{
@@ -27,22 +29,26 @@ public class Servidor{
     public Servidor() {
         puerto = 5000;
         conectarActivo = true;
+        leerConfiguracion();
+
     }
 
-    public void leerConfiguracion() {
+    public String leerConfiguracion() {
         // Leer configuracion
+        String config = "";
         try {
             readJSON.readFile("src/datos/data13-41.json");
             config = readJSON.getPrimerMensaje();
-            enviarRutinaConexion('0');
+
             //readJSON.getRutinaPlan();
             //readJSON.getRutinaDesconexion();
         }catch(Exception e) {
             e.printStackTrace();
         }
+        return config;
     }
 
-    public void enviarRutinaConexion(char seg) {
+    public void enviarRutinaConexion(String seg) {
         ArrayList<JSONArray> arr = readJSON.getRutinaConexion();
         JSONArray instrucciones1 = arr.get(0);
         JSONArray instrucciones2 = arr.get(1);
@@ -65,13 +71,41 @@ public class Servidor{
             dato += "-"+cod2;
         }
 
-        System.out.println(dato);
+        System.out.println("Conexion : "+dato);
     }
 
-    public String buscarCodigo(Iterator iterator, char number){
+
+    public void enviarRutinaDesconexion(String seg) {
+        ArrayList<JSONArray> arr = readJSON.getRutinaDesconexion();
+        JSONArray instrucciones1 = arr.get(0);
+        JSONArray instrucciones2 = arr.get(1);
+
+        Iterator iterator1 = instrucciones1.iterator();
+        Iterator iterator2 = instrucciones2.iterator();
+
+        String dato = "";
+
+        String cod1 = buscarCodigo(iterator1, seg);
+        String cod2 = buscarCodigo(iterator2, seg);
+
+        if(cod1!=""){
+            cod1 = cod1.replaceAll("^.","1");
+            dato += cod1;
+        }
+
+        if(cod2!=""){
+            cod2 = cod2.replaceAll("^.","2");
+            dato += "-"+cod2;
+        }
+
+        System.out.println("Desconexion : "+dato);
+    }
+
+    public String buscarCodigo(Iterator iterator, String number){
+        int i = 0;
         while(iterator.hasNext()){
             String codigo = iterator.next().toString();
-            if(codigo.charAt(0)==number){
+            if(codigo.startsWith(number)){
                 return codigo;
             }
         }
@@ -87,6 +121,18 @@ public class Servidor{
             // Alguien se conectó - se capturan flujos
             datosEntrada = new DataInputStream(cliente.getInputStream());
             datosSalida = new DataOutputStream(cliente.getOutputStream());
+
+            transmitirConfiguracionInicial();
+            Timer timer = new Timer();
+            TimerTask taskConexion = new TaskRutinaConexion(14);
+            /*Timer timer2 = new Timer();
+            TimerTask taskDesconexion = new TaskRutinaDesconexion(14);*/
+
+            timer.schedule(taskConexion, 200, 1000);
+            //System.out.println("inicia desconexion");
+            //timer2.schedule(taskDesconexion, 200, 1000);
+
+
         } catch (IOException e) {
             System.out.println("Error en la conexion");
             throw new RuntimeException(e);
@@ -95,12 +141,12 @@ public class Servidor{
 
     public void transmitirConfiguracionInicial() {
         // Todo gestionar configuracion inicial
-        leerConfiguracion();
 
         String cantLeds;
         try {
-            datosSalida.writeUTF(config);
+            datosSalida.writeUTF(leerConfiguracion());
             cantLeds = datosEntrada.readUTF();
+            System.out.println("Cliente envia: " + cantLeds);
         } catch (IOException e) {
             System.out.println("Error en la transmision de la configuracion inicial");
             throw new RuntimeException(e);
@@ -126,8 +172,7 @@ public class Servidor{
     }
 
     public void transmitirRutinaConexion() {
-        enviarRutinaConexion('0');
-        desconectar();
+        enviarRutinaConexion("0");
     }
 
     public void desconectar() {
@@ -140,5 +185,40 @@ public class Servidor{
             throw new RuntimeException(e);
         }
     }
+
+    private class TaskRutinaConexion extends TimerTask {
+        public static int i=0;
+        int tiempoMaximo;
+        TaskRutinaConexion(int tiempoMaximo)
+        {
+            this.tiempoMaximo = tiempoMaximo;
+        }
+
+        public void run(){
+            if(i<tiempoMaximo)
+                enviarRutinaConexion(Integer.toString(i));
+            else
+                cancel();
+            i++;
+        }
+    }
+
+    private class TaskRutinaDesconexion extends TimerTask{
+        public static int i=0;
+        int tiempoMaximo;
+        TaskRutinaDesconexion(int tiempoMaximo)
+        {
+            this.tiempoMaximo = tiempoMaximo;
+        }
+
+        public void run(){
+            if(i<tiempoMaximo)
+                enviarRutinaDesconexion(Integer.toString(i));
+            else
+                cancel();
+            i++;
+        }
+    }
+
 
 }

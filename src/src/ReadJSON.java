@@ -51,7 +51,7 @@ public class ReadJSON {
         }
         numbers = numbers.substring(0, numbers.length()-1);
         System.out.println(numbers);
-        
+
         return numbers;
 
     }
@@ -64,7 +64,7 @@ public class ReadJSON {
             JSONArray tiempos = (JSONArray) aux.get("tiempos");
             arr.add(tiempos);
         }
-        System.out.println(arr);
+        //System.out.println(arr);
         return arr;
     }
 
