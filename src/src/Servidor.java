@@ -10,7 +10,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.TimerTask;
+
 
 public class Servidor{
     private ServerSocket server;
@@ -25,7 +25,6 @@ public class Servidor{
     public Servidor() {
         puerto = 5000;
         conectarActivo = true;
-        Timer timer = new Timer(1,null);
 
         try {
             readJSON.readFile("src/datos/data13-41.json");
@@ -81,6 +80,8 @@ public class Servidor{
         server = new ServerSocket(puerto);
 
         while(conectarActivo){
+
+
             // Esperar a que alguien se conecte
             cliente = server.accept();
             // Alguien se conectó
@@ -89,7 +90,7 @@ public class Servidor{
             datosSalida = new DataOutputStream(cliente.getOutputStream());
             datosSalida.writeUTF(config);
             enviarRutinaConexion('0');
-            datosSalida.writeInt(14);
+
             datosSalida.close();
             server.close();
             System.out.println("Conexion terminada");
@@ -97,7 +98,4 @@ public class Servidor{
 
     }
 
-    public void run(){
-
-    }
 }
