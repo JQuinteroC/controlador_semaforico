@@ -40,7 +40,7 @@ public class ReadJSON {
 
     }
 
-    public void getPrimerMensaje(){
+    public String getPrimerMensaje(){
         Iterator iterator = confsConexion.iterator();
         String numbers = "";
         while(iterator.hasNext()){
@@ -51,6 +51,8 @@ public class ReadJSON {
         }
         numbers = numbers.substring(0, numbers.length()-1);
         System.out.println(numbers);
+        
+        return numbers;
 
     }
 

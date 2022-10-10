@@ -20,14 +20,15 @@ public class Servidor{
     private DataInputStream datosEntrada;
     private DataOutputStream datosSalida;
     private boolean conectarActivo;
+    private String config;
 
     ReadJSON readJSON = new ReadJSON();
     public Servidor() {
         puerto = 5000;
         conectarActivo = true;
         try {
-            readJSON.readFile("src/datos/data13-41.json");
-            readJSON.getPrimerMensaje();
+            readJSON.readFile("src/datos/prueba.json");
+            config = readJSON.getPrimerMensaje();
 
             //readJSON.getRutinaPlan();
             //readJSON.getRutinaDesconexion();
@@ -62,6 +63,7 @@ public class Servidor{
             // Alguien se conectó
             //datosEntrada = new DataInputStream(cliente.getInputStream());
             datosSalida = new DataOutputStream(cliente.getOutputStream());
+            datosSalida.writeUTF(config);
             enviarRutinaConexion();
             datosSalida.writeInt(14);
             datosSalida.close();
