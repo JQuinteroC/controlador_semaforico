@@ -58,16 +58,18 @@ public class Servidor implements Runnable {
 
         String cod1 = buscarCodigo(iterator1, seg);
         String cod2 = buscarCodigo(iterator2, seg);
-
         if(cod1!=""){
-            cod1 = cod1.replaceAll("^.","1");
-            dato += cod1;
+            cod1 = cod1.replaceAll("^(\\d*)","1");
+            infoCod1 = cod1;
         }
+        dato += infoCod1;
+
 
         if(cod2!=""){
-            cod2 = cod2.replaceAll("^.","2");
-            dato += "-"+cod2;
+            cod2 = cod2.replaceAll("^(\\d*)","2");
+            infoCod2 = cod2;
         }
+        dato += "-"+infoCod2;
 
         if (!dato.equals(""))
             infoRutina = dato;
@@ -101,20 +103,22 @@ public class Servidor implements Runnable {
         String dato = "";
 
         String cod1 = buscarCodigo(iterator1, seg);
-        System.out.println("Cod1 " + cod1);
 
         String cod2 = buscarCodigo(iterator2, seg);
-        System.out.println("Cod2 " + cod2);
+
 
         if(cod1!=""){
-            cod1 = cod1.replaceAll("^.","1");
-            dato += cod1;
+            cod1 = cod1.replaceAll("^(\\d*)","1");
+            infoCod1 = cod1;
         }
+        dato += infoCod1;
+
 
         if(cod2!=""){
-            cod2 = cod2.replaceAll("^.","2");
-            dato += "-" + cod2;
+            cod2 = cod2.replaceAll("^(\\d*)","2");
+            infoCod2 = cod2;
         }
+        dato += "-"+infoCod2;
 
         if (!dato.equals(""))
             infoRutina = dato;
@@ -122,16 +126,14 @@ public class Servidor implements Runnable {
         // Enviar y recibir
         String cantLedsFuncionando;
         try {
-            System.out.println("Servidor envia: " + infoRutina);
             datosSalida.writeUTF(infoRutina);
         } catch (IOException e) {
-            System.out.println("Error en el envio de la rutina de conexion");
+            System.out.println("Error en el envio de la rutina normal");
             throw new RuntimeException(e);
         }
 
         try {
             cantLedsFuncionando = datosEntrada.readUTF();
-            System.out.println("Servidor recibe: " + cantLedsFuncionando);
         } catch (IOException e) {
             System.out.println("Error en el recaudo de los leds funcionando");
             throw new RuntimeException(e);
@@ -153,16 +155,36 @@ public class Servidor implements Runnable {
         String cod2 = buscarCodigo(iterator2, seg);
 
         if(cod1!=""){
-            cod1 = cod1.replaceAll("^.","1");
-            dato += cod1;
+            cod1 = cod1.replaceAll("^(\\d*)","1");
+            infoCod1 = cod1;
         }
+        dato += infoCod1;
+
 
         if(cod2!=""){
-            cod2 = cod2.replaceAll("^.","2");
-            dato += "-"+cod2;
+            cod2 = cod2.replaceAll("^(\\d*)","2");
+            infoCod2 = cod2;
+        }
+        dato += "-"+infoCod2;
+
+        if (!dato.equals(""))
+            infoRutina = dato;
+
+        // Enviar y recibir
+        String cantLedsFuncionando;
+        try {
+            datosSalida.writeUTF(infoRutina);
+        } catch (IOException e) {
+            System.out.println("Error en el envio de la rutina de desconexion");
+            throw new RuntimeException(e);
         }
 
-        System.out.println("Desconexion : "+dato);
+        try {
+            cantLedsFuncionando = datosEntrada.readUTF();
+        } catch (IOException e) {
+            System.out.println("Error en el recaudo de los leds funcionando");
+            throw new RuntimeException(e);
+        }
     }
 
     public String buscarCodigo(Iterator iterator, String number){
@@ -260,11 +282,24 @@ public class Servidor implements Runnable {
         }*/
 
         // Rutina normal
-        tiempoRutina = readJSON.getTiempoRutina();
+        /*tiempoRutina = readJSON.getTiempoRutina();
+        while (true) {
+            for (int i = 0; i < tiempoRutina; i++) {
+                enviarRutinaNormal(Integer.toString(i));
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }*/
+
+        // Rutina de desconexion
+        tiempoRutina = readJSON.getTiempoRutinaDesconexion();
         for (int i = 0; i < tiempoRutina; i++) {
-            enviarRutinaNormal(Integer.toString(i));
+            enviarRutinaDesconexion(Integer.toString(i));
             try {
-                Thread.sleep(500);
+                Thread.sleep(1000);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -273,7 +308,7 @@ public class Servidor implements Runnable {
     }
 
     private class TaskRutinaConexion extends TimerTask {
-        public static int i=0;
+        public int i=0;
         int tiempoMaximo;
         TaskRutinaConexion(int tiempoMaximo)
         {
@@ -290,7 +325,7 @@ public class Servidor implements Runnable {
     }
 
     private class TaskRutinaDesconexion extends TimerTask{
-        public static int i=0;
+        public int i=0;
         int tiempoMaximo;
         TaskRutinaDesconexion(int tiempoMaximo)
         {

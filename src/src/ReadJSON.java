@@ -52,6 +52,14 @@ public class ReadJSON {
         return numbers;
     }
 
+    public Long getTiempoRutinaDesconexion() {
+        Iterator iterator = confsDesconexion.iterator();
+        String numbers = "";
+        JSONObject aux = (JSONObject) iterator.next();
+        Long tc = (Long) aux.get("TC");
+        return tc;
+    }
+
     public Long getTiempoRutinaConexion(){
         Iterator iterator = confsConexion.iterator();
         String numbers = "";
@@ -92,6 +100,5 @@ public class ReadJSON {
     public ArrayList<JSONArray> getRutinaDesconexion(){
         return getRutina(confsDesconexion);
     }
-
 
 }
