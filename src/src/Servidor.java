@@ -23,14 +23,12 @@ public class Servidor{
     private DataOutputStream datosSalida;
     private boolean conectarActivo;
     private String config;
-    private ArrayList<ArrayList <int []>> allCardsLeds;
+    private ArrayList<ArrayList <int []>> allCardsLeds = new ArrayList<>();
 
     ReadJSON readJSON = new ReadJSON();
     public Servidor() {
         puerto = 5000;
         conectarActivo = true;
-        leerConfiguracion();
-
     }
 
     public String leerConfiguracion() {
@@ -69,6 +67,17 @@ public class Servidor{
         if(cod2!=""){
             cod2 = cod2.replaceAll("^.","2");
             dato += "-"+cod2;
+        }
+
+        // Enviar y recibir
+        String cantLeds;
+        try {
+            datosSalida.writeUTF(dato);
+            cantLeds = datosEntrada.readUTF();
+            System.out.println("Servidor recibe: " + cantLeds);
+        } catch (IOException e) {
+            System.out.println("Error en la transmision de la rutina de conexion");
+            throw new RuntimeException(e);
         }
 
         System.out.println("Conexion : "+dato);
@@ -140,13 +149,11 @@ public class Servidor{
     }
 
     public void transmitirConfiguracionInicial() {
-        // Todo gestionar configuracion inicial
 
         String cantLeds;
         try {
             datosSalida.writeUTF(leerConfiguracion());
             cantLeds = datosEntrada.readUTF();
-            System.out.println("Cliente envia: " + cantLeds);
         } catch (IOException e) {
             System.out.println("Error en la transmision de la configuracion inicial");
             throw new RuntimeException(e);
@@ -169,10 +176,6 @@ public class Servidor{
             }
             ledsInt[j] = Integer.parseInt(leds[i]);
         }
-    }
-
-    public void transmitirRutinaConexion() {
-        enviarRutinaConexion("0");
     }
 
     public void desconectar() {

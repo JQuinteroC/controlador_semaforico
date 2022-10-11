@@ -51,9 +51,7 @@ public class ReadJSON {
         }
         numbers = numbers.substring(0, numbers.length()-1);
         System.out.println(numbers);
-
         return numbers;
-
     }
 
     public ArrayList<JSONArray> getRutina(ArrayList<JSONObject> confs){
