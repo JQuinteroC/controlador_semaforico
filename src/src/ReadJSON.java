@@ -23,7 +23,6 @@ public class ReadJSON {
             Object obj = parser.parse(new FileReader(path));
             jsonObject = (JSONObject)obj;
             JSONArray confs = (JSONArray)jsonObject.get("CONF");
-            System.out.println("confs:");
             Iterator iterator = confs.iterator();
             while (iterator.hasNext()) {
                 String aux = iterator.next().toString();
@@ -50,8 +49,15 @@ public class ReadJSON {
 
         }
         numbers = numbers.substring(0, numbers.length()-1);
-        System.out.println(numbers);
         return numbers;
+    }
+
+    public Long getTiempoRutina(){
+        Iterator iterator = confsConexion.iterator();
+        String numbers = "";
+        JSONObject aux = (JSONObject) iterator.next();
+        Long tc = (Long) aux.get("TC");
+        return tc;
     }
 
     public ArrayList<JSONArray> getRutina(ArrayList<JSONObject> confs){

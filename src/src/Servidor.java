@@ -2,33 +2,31 @@ package src;
 
 import org.json.simple.JSONArray;
 
-import javax.swing.*;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.TimerTask;
-import java.util.Timer;
 
 
-public class Servidor{
+public class Servidor implements Runnable {
+    private Thread hiloRutinas;
     private ServerSocket server;
     private Socket cliente;
     private int puerto;
     private DataInputStream datosEntrada;
     private DataOutputStream datosSalida;
     private boolean conectarActivo;
-    private String config;
     private ArrayList<ArrayList <int []>> allCardsLeds = new ArrayList<>();
-
+    private String infoRutina;
     ReadJSON readJSON = new ReadJSON();
     public Servidor() {
         puerto = 5000;
         conectarActivo = true;
+        hiloRutinas = new Thread(this);
     }
 
     public String leerConfiguracion() {
@@ -37,7 +35,7 @@ public class Servidor{
         try {
             readJSON.readFile("src/datos/data13-41.json");
             config = readJSON.getPrimerMensaje();
-
+            System.out.println("Tiempo rutina: " + readJSON.getTiempoRutina());
             //readJSON.getRutinaPlan();
             //readJSON.getRutinaDesconexion();
         }catch(Exception e) {
@@ -69,18 +67,69 @@ public class Servidor{
             dato += "-"+cod2;
         }
 
+        if (!dato.equals(""))
+            infoRutina = dato;
+
         // Enviar y recibir
-        String cantLeds;
+        String cantLedsFuncionando;
         try {
-            datosSalida.writeUTF(dato);
-            cantLeds = datosEntrada.readUTF();
-            System.out.println("Servidor recibe: " + cantLeds);
+            datosSalida.writeUTF(infoRutina);
         } catch (IOException e) {
-            System.out.println("Error en la transmision de la rutina de conexion");
+            System.out.println("Error en el envio de la rutina de conexion");
             throw new RuntimeException(e);
         }
 
-        System.out.println("Conexion : "+dato);
+        try {
+            cantLedsFuncionando = datosEntrada.readUTF();
+            System.out.println("Servidor recibe: " + cantLedsFuncionando);
+        } catch (IOException e) {
+            System.out.println("Error en el recaudo de los leds funcionando");
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void enviarRutinaNormal(String seg) {
+        ArrayList<JSONArray> arr = readJSON.getRutinaConexion();
+        JSONArray instrucciones1 = arr.get(0);
+        JSONArray instrucciones2 = arr.get(1);
+
+        Iterator iterator1 = instrucciones1.iterator();
+        Iterator iterator2 = instrucciones2.iterator();
+
+        String dato = "";
+
+        String cod1 = buscarCodigo(iterator1, seg);
+        String cod2 = buscarCodigo(iterator2, seg);
+
+        if(cod1!=""){
+            cod1 = cod1.replaceAll("^.","1");
+            dato += cod1;
+        }
+
+        if(cod2!=""){
+            cod2 = cod2.replaceAll("^.","2");
+            dato += "-"+cod2;
+        }
+
+        if (!dato.equals(""))
+            infoRutina = dato;
+
+        // Enviar y recibir
+        String cantLedsFuncionando;
+        try {
+            datosSalida.writeUTF(infoRutina);
+        } catch (IOException e) {
+            System.out.println("Error en el envio de la rutina de conexion");
+            throw new RuntimeException(e);
+        }
+
+        try {
+            cantLedsFuncionando = datosEntrada.readUTF();
+            System.out.println("Servidor recibe: " + cantLedsFuncionando);
+        } catch (IOException e) {
+            System.out.println("Error en el recaudo de los leds funcionando");
+            throw new RuntimeException(e);
+        }
     }
 
 
@@ -132,14 +181,15 @@ public class Servidor{
             datosSalida = new DataOutputStream(cliente.getOutputStream());
 
             transmitirConfiguracionInicial();
-            Timer timer = new Timer();
+            hiloRutinas.start();
+            /*Timer timer = new Timer();
             TimerTask taskConexion = new TaskRutinaConexion(14);
-            /*Timer timer2 = new Timer();
-            TimerTask taskDesconexion = new TaskRutinaDesconexion(14);*/
+            *//*Timer timer2 = new Timer();
+            TimerTask taskDesconexion = new TaskRutinaDesconexion(14);*//*
 
             timer.schedule(taskConexion, 200, 1000);
             //System.out.println("inicia desconexion");
-            //timer2.schedule(taskDesconexion, 200, 1000);
+            //timer2.schedule(taskDesconexion, 200, 1000);*/
 
 
         } catch (IOException e) {
@@ -187,6 +237,31 @@ public class Servidor{
             System.out.println("Error en la desconexion");
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public void run() {
+        // Rutina de conexion
+        Long tiempoRutina = readJSON.getTiempoRutina();
+        for (int i = 0; i < tiempoRutina; i++) {
+            enviarRutinaConexion(Integer.toString(i));
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        // Rutina normal
+        /*//Long tiempoRutina = readJSON.getTiempoRutina();
+        for (int i = 0; i < tiempoRutina; i++) {
+            enviarRutinaConexion(Integer.toString(i));
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }*/
     }
 
     private class TaskRutinaConexion extends TimerTask {
