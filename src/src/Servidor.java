@@ -37,15 +37,18 @@ public class Servidor implements Runnable {
         try {
             readJSON.readFile("src/datos/data13-41.json");
             config = readJSON.getPrimerMensaje();
-            System.out.println("Tiempo rutina: " + readJSON.getTiempoRutina());
-            //readJSON.getRutinaPlan();
-            //readJSON.getRutinaDesconexion();
         }catch(Exception e) {
             e.printStackTrace();
         }
         return config;
     }
 
+    private boolean valdiarFuncionamientoDeLeds(String cantLedsFuncionando) {
+        String[] ledsXTarjetas = cantLedsFuncionando.split("/");
+        System.out.println("Servidor recibe: " + cantLedsFuncionando);
+        System.out.println("Servidor tiene: " + infoCod1 + " " + infoCod2);
+        return true;
+    }
     public void enviarRutinaConexion(String seg) {
         ArrayList<JSONArray> arr = readJSON.getRutinaConexion();
         JSONArray instrucciones1 = arr.get(0);
@@ -85,7 +88,7 @@ public class Servidor implements Runnable {
 
         try {
             cantLedsFuncionando = datosEntrada.readUTF();
-            System.out.println("Servidor recibe: " + cantLedsFuncionando);
+            valdiarFuncionamientoDeLeds(cantLedsFuncionando);
         } catch (IOException e) {
             System.out.println("Error en el recaudo de los leds funcionando");
             throw new RuntimeException(e);
@@ -272,17 +275,17 @@ public class Servidor implements Runnable {
     public void run() {
         // Rutina de conexion
         Long tiempoRutina = readJSON.getTiempoRutinaConexion();
-        /*for (int i = 0; i < tiempoRutina; i++) {
+        for (int i = 0; i < tiempoRutina; i++) {
             enviarRutinaConexion(Integer.toString(i));
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
-        }*/
+        }
 
         // Rutina normal
-        /*tiempoRutina = readJSON.getTiempoRutina();
+        tiempoRutina = readJSON.getTiempoRutina();
         while (true) {
             for (int i = 0; i < tiempoRutina; i++) {
                 enviarRutinaNormal(Integer.toString(i));
@@ -292,10 +295,10 @@ public class Servidor implements Runnable {
                     throw new RuntimeException(e);
                 }
             }
-        }*/
+        }
 
         // Rutina de desconexion
-        tiempoRutina = readJSON.getTiempoRutinaDesconexion();
+        /*tiempoRutina = readJSON.getTiempoRutinaDesconexion();
         for (int i = 0; i < tiempoRutina; i++) {
             enviarRutinaDesconexion(Integer.toString(i));
             try {
@@ -303,7 +306,7 @@ public class Servidor implements Runnable {
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
-        }
+        }*/
 
     }
 
