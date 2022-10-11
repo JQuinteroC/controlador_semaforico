@@ -52,8 +52,16 @@ public class ReadJSON {
         return numbers;
     }
 
-    public Long getTiempoRutina(){
+    public Long getTiempoRutinaConexion(){
         Iterator iterator = confsConexion.iterator();
+        String numbers = "";
+        JSONObject aux = (JSONObject) iterator.next();
+        Long tc = (Long) aux.get("TC");
+        return tc;
+    }
+
+    public Long getTiempoRutina(){
+        Iterator iterator = confsPlan.iterator();
         String numbers = "";
         JSONObject aux = (JSONObject) iterator.next();
         Long tc = (Long) aux.get("TC");

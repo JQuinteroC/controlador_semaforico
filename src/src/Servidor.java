@@ -22,6 +22,8 @@ public class Servidor implements Runnable {
     private boolean conectarActivo;
     private ArrayList<ArrayList <int []>> allCardsLeds = new ArrayList<>();
     private String infoRutina;
+    private String infoCod1;
+    private String infoCod2;
     ReadJSON readJSON = new ReadJSON();
     public Servidor() {
         puerto = 5000;
@@ -89,7 +91,7 @@ public class Servidor implements Runnable {
     }
 
     public void enviarRutinaNormal(String seg) {
-        ArrayList<JSONArray> arr = readJSON.getRutinaConexion();
+        ArrayList<JSONArray> arr = readJSON.getRutinaPlan();
         JSONArray instrucciones1 = arr.get(0);
         JSONArray instrucciones2 = arr.get(1);
 
@@ -99,7 +101,10 @@ public class Servidor implements Runnable {
         String dato = "";
 
         String cod1 = buscarCodigo(iterator1, seg);
+        System.out.println("Cod1 " + cod1);
+
         String cod2 = buscarCodigo(iterator2, seg);
+        System.out.println("Cod2 " + cod2);
 
         if(cod1!=""){
             cod1 = cod1.replaceAll("^.","1");
@@ -108,7 +113,7 @@ public class Servidor implements Runnable {
 
         if(cod2!=""){
             cod2 = cod2.replaceAll("^.","2");
-            dato += "-"+cod2;
+            dato += "-" + cod2;
         }
 
         if (!dato.equals(""))
@@ -117,6 +122,7 @@ public class Servidor implements Runnable {
         // Enviar y recibir
         String cantLedsFuncionando;
         try {
+            System.out.println("Servidor envia: " + infoRutina);
             datosSalida.writeUTF(infoRutina);
         } catch (IOException e) {
             System.out.println("Error en el envio de la rutina de conexion");
@@ -163,7 +169,8 @@ public class Servidor implements Runnable {
         int i = 0;
         while(iterator.hasNext()){
             String codigo = iterator.next().toString();
-            if(codigo.startsWith(number)){
+            String codigoArr[] = codigo.split(":");
+            if(number.equals(codigoArr[0])){
                 return codigo;
             }
         }
@@ -242,19 +249,8 @@ public class Servidor implements Runnable {
     @Override
     public void run() {
         // Rutina de conexion
-        Long tiempoRutina = readJSON.getTiempoRutina();
-        for (int i = 0; i < tiempoRutina; i++) {
-            enviarRutinaConexion(Integer.toString(i));
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        // Rutina normal
-        /*//Long tiempoRutina = readJSON.getTiempoRutina();
-        for (int i = 0; i < tiempoRutina; i++) {
+        Long tiempoRutina = readJSON.getTiempoRutinaConexion();
+        /*for (int i = 0; i < tiempoRutina; i++) {
             enviarRutinaConexion(Integer.toString(i));
             try {
                 Thread.sleep(1000);
@@ -262,6 +258,18 @@ public class Servidor implements Runnable {
                 throw new RuntimeException(e);
             }
         }*/
+
+        // Rutina normal
+        tiempoRutina = readJSON.getTiempoRutina();
+        for (int i = 0; i < tiempoRutina; i++) {
+            enviarRutinaNormal(Integer.toString(i));
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
     }
 
     private class TaskRutinaConexion extends TimerTask {
