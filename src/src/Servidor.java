@@ -10,8 +10,8 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-
 public class Servidor implements Runnable {
+
     private Thread hiloRutinas;
     private ServerSocket server;
     private Socket cliente;
@@ -19,12 +19,12 @@ public class Servidor implements Runnable {
     private DataInputStream datosEntrada;
     private DataOutputStream datosSalida;
     private boolean conectarActivo;
-    private ArrayList<ArrayList <int []>> allCardsLeds = new ArrayList<>();
+    private ArrayList<ArrayList<int[]>> allCardsLeds = new ArrayList<>();
     private String infoRutina;
-    private String infoCod1;
-    private String infoCod2;
+    private ArrayList<String> infoCod = new ArrayList<>();
     private boolean dano;
     ReadJSON readJSON = new ReadJSON();
+
     public Servidor() {
         puerto = 5000;
         conectarActivo = true;
@@ -35,9 +35,9 @@ public class Servidor implements Runnable {
         // Leer configuracion
         String config = "";
         try {
-            readJSON.readFile("src/datos/data13-41.json");
+            readJSON.readFile("src/datos/data80-43.json");
             config = readJSON.getPrimerMensaje();
-        }catch(Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return config;
@@ -45,15 +45,11 @@ public class Servidor implements Runnable {
 
     private boolean validarFuncionamientoDeLeds(String cantLedsFuncionando) {
         String[] ledsXTarjetas = cantLedsFuncionando.split("/");
-        for (int i=0; i<ledsXTarjetas.length; i++) {
+        for (int i = 0; i < ledsXTarjetas.length; i++) {
             ledsXTarjetas[i] = ledsXTarjetas[i].replaceAll("-", "");
             ledsXTarjetas[i] = ledsXTarjetas[i].replaceAll(":", "");
-            if (i==0 && !limpiarNroLedsFuncionandoXTarjeta(infoCod1).equals(ledsXTarjetas[0])) {
-                System.out.println(limpiarNroLedsFuncionandoXTarjeta(infoCod1) + " " + ledsXTarjetas[i]);
-                return false;
-            }
-            if (i==1 && !limpiarNroLedsFuncionandoXTarjeta(infoCod2).equals(ledsXTarjetas[1])) {
-                System.out.println(limpiarNroLedsFuncionandoXTarjeta(infoCod2) + " " + ledsXTarjetas[1]);
+            if (!limpiarNroLedsFuncionandoXTarjeta(infoCod.get(i)).equals(ledsXTarjetas[i])) {
+                System.out.println(limpiarNroLedsFuncionandoXTarjeta(infoCod.get(i)) + " " + ledsXTarjetas[i]);
                 return false;
             }
         }
@@ -68,31 +64,30 @@ public class Servidor implements Runnable {
 
     public void enviarRutinaConexion(String seg) {
         ArrayList<JSONArray> arr = readJSON.getRutinaConexion();
-        JSONArray instrucciones1 = arr.get(0);
-        JSONArray instrucciones2 = arr.get(1);
-
-        Iterator iterator1 = instrucciones1.iterator();
-        Iterator iterator2 = instrucciones2.iterator();
-
         String dato = "";
 
-        String cod1 = buscarCodigo(iterator1, seg);
-        String cod2 = buscarCodigo(iterator2, seg);
-        if(cod1!=""){
-            cod1 = cod1.replaceAll("^(\\d*)","1");
-            infoCod1 = cod1;
+        for (int i = 0; i < arr.size(); i++) {
+            Iterator iterator = arr.get(i).iterator();
+            String cod = buscarCodigo(iterator, seg);
+            if (!"".equals(cod)) {
+                cod = cod.replaceAll("^(\\d*)", Integer.toString(i + 1));
+                if (infoCod.size() >= i+1) {
+                    infoCod.set(i, cod);
+                } else {
+                    infoCod.add(cod);
+                }
+            }
+
+            if (i == 0) {
+                dato += infoCod.get(i);
+            } else {
+                dato += "-" + infoCod.get(i);
+            }
         }
-        dato += infoCod1;
 
-
-        if(cod2!=""){
-            cod2 = cod2.replaceAll("^(\\d*)","2");
-            infoCod2 = cod2;
-        }
-        dato += "-"+infoCod2;
-
-        if (!dato.equals(""))
+        if (!dato.equals("")) {
             infoRutina = dato;
+        }
 
         // Enviar y recibir
         String cantLedsFuncionando;
@@ -105,8 +100,9 @@ public class Servidor implements Runnable {
 
         try {
             cantLedsFuncionando = datosEntrada.readUTF();
-            if (!validarFuncionamientoDeLeds(cantLedsFuncionando))
+            if (!validarFuncionamientoDeLeds(cantLedsFuncionando)) {
                 System.out.println("Led danado");
+            }
         } catch (IOException e) {
             System.out.println("Error en el recaudo de los leds funcionando");
             throw new RuntimeException(e);
@@ -115,34 +111,30 @@ public class Servidor implements Runnable {
 
     public void enviarRutinaNormal(String seg) {
         ArrayList<JSONArray> arr = readJSON.getRutinaPlan();
-        JSONArray instrucciones1 = arr.get(0);
-        JSONArray instrucciones2 = arr.get(1);
-
-        Iterator iterator1 = instrucciones1.iterator();
-        Iterator iterator2 = instrucciones2.iterator();
-
         String dato = "";
 
-        String cod1 = buscarCodigo(iterator1, seg);
+        for (int i = 0; i < arr.size(); i++) {
+            Iterator iterator = arr.get(i).iterator();
+            String cod = buscarCodigo(iterator, seg);
+            if (!"".equals(cod)) {
+                cod = cod.replaceAll("^(\\d*)", Integer.toString(i + 1));
+                                if (infoCod.size() >= i+1) {
+                    infoCod.set(i, cod);
+                } else {
+                    infoCod.add(cod);
+                }
+            }
 
-        String cod2 = buscarCodigo(iterator2, seg);
-
-
-        if(cod1!=""){
-            cod1 = cod1.replaceAll("^(\\d*)","1");
-            infoCod1 = cod1;
+            if (i == 0) {
+                dato += infoCod.get(i);
+            } else {
+                dato += "-" + infoCod.get(i);
+            }
         }
-        dato += infoCod1;
 
-
-        if(cod2!=""){
-            cod2 = cod2.replaceAll("^(\\d*)","2");
-            infoCod2 = cod2;
-        }
-        dato += "-"+infoCod2;
-
-        if (!dato.equals(""))
+        if (!dato.equals("")) {
             infoRutina = dato;
+        }
 
         // Enviar y recibir
         String cantLedsFuncionando;
@@ -155,43 +147,41 @@ public class Servidor implements Runnable {
 
         try {
             cantLedsFuncionando = datosEntrada.readUTF();
-            if (!validarFuncionamientoDeLeds(cantLedsFuncionando))
+            if (!validarFuncionamientoDeLeds(cantLedsFuncionando)) {
                 System.out.println("Led danado");
+            }
         } catch (IOException e) {
             System.out.println("Error en el recaudo de los leds funcionando");
             throw new RuntimeException(e);
         }
     }
 
-
     public void enviarRutinaDesconexion(String seg) {
         ArrayList<JSONArray> arr = readJSON.getRutinaDesconexion();
-        JSONArray instrucciones1 = arr.get(0);
-        JSONArray instrucciones2 = arr.get(1);
-
-        Iterator iterator1 = instrucciones1.iterator();
-        Iterator iterator2 = instrucciones2.iterator();
-
         String dato = "";
 
-        String cod1 = buscarCodigo(iterator1, seg);
-        String cod2 = buscarCodigo(iterator2, seg);
+        for (int i = 0; i < arr.size(); i++) {
+            Iterator iterator = arr.get(i).iterator();
+            String cod = buscarCodigo(iterator, seg);
+            if (!"".equals(cod)) {
+                cod = cod.replaceAll("^(\\d*)", Integer.toString(i + 1));
+                                if (infoCod.size() >= i+1) {
+                    infoCod.set(i, cod);
+                } else {
+                    infoCod.add(cod);
+                }
+            }
 
-        if(cod1!=""){
-            cod1 = cod1.replaceAll("^(\\d*)","1");
-            infoCod1 = cod1;
+            if (i == 0) {
+                dato += infoCod.get(i);
+            } else {
+                dato += "-" + infoCod.get(i);
+            }
         }
-        dato += infoCod1;
 
-
-        if(cod2!=""){
-            cod2 = cod2.replaceAll("^(\\d*)","2");
-            infoCod2 = cod2;
-        }
-        dato += "-"+infoCod2;
-
-        if (!dato.equals(""))
+        if (!dato.equals("")) {
             infoRutina = dato;
+        }
 
         // Enviar y recibir
         String cantLedsFuncionando;
@@ -227,12 +217,12 @@ public class Servidor implements Runnable {
         }
     }
 
-    public String buscarCodigo(Iterator iterator, String number){
+    public String buscarCodigo(Iterator iterator, String number) {
         int i = 0;
-        while(iterator.hasNext()){
+        while (iterator.hasNext()) {
             String codigo = iterator.next().toString();
             String codigoArr[] = codigo.split(":");
-            if(number.equals(codigoArr[0])){
+            if (number.equals(codigoArr[0])) {
                 return codigo;
             }
         }
@@ -270,12 +260,12 @@ public class Servidor implements Runnable {
 
         String[] leds = cantLeds.split("-");
         int[] ledsInt = null;
-        ArrayList<int []> cardLeds = new ArrayList<>();
-        for (int i = 0, j=0; i < leds.length; i++, j++) {
+        ArrayList<int[]> cardLeds = new ArrayList<>();
+        for (int i = 0, j = 0; i < leds.length; i++, j++) {
             if (i % 3 == 0) {
                 if (i != 0) {
                     cardLeds.add(ledsInt);
-                    if(cardLeds.size() == 2) {
+                    if (cardLeds.size() == 2) {
                         allCardsLeds.add(cardLeds);
                         cardLeds = new ArrayList<>();
                     }
@@ -314,7 +304,7 @@ public class Servidor implements Runnable {
         Long tiempoRutina = readJSON.getTiempoRutinaConexion();
         for (int i = 0; i < tiempoRutina; i++) {
             System.err.println("Seg: " + seg);
-            if (dano){
+            if (dano) {
                 enviarRutinaDano();
             } else {
                 enviarRutinaConexion(Integer.toString(i));
@@ -328,7 +318,7 @@ public class Servidor implements Runnable {
         while (true) {
             for (int i = 0; i < tiempoRutina; i++) {
                 System.err.println("Seg: " + seg);
-                if (dano){
+                if (dano) {
                     enviarRutinaDano();
                 } else {
                     enviarRutinaNormal(Integer.toString(i));
@@ -344,7 +334,6 @@ public class Servidor implements Runnable {
             enviarRutinaDesconexion(Integer.toString(i));
             delay(mls);
         }*/
-
     }
 
 }
