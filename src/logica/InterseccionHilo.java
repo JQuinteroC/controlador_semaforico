@@ -1,41 +1,49 @@
-package src;
+package logica;
 
 import org.json.simple.JSONArray;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
-public class Servidor implements Runnable {
+public class InterseccionHilo extends Thread {
 
-    private Thread hiloRutinas;
-    private ServerSocket server;
-    private Socket cliente;
-    private int puerto;
-    private DataInputStream datosEntrada;
+    private Socket host;
     private DataOutputStream datosSalida;
-    private boolean conectarActivo;
-    private ArrayList<ArrayList<int[]>> allCardsLeds = new ArrayList<>();
+    private DataInputStream datosEntrada;
+    private ReadJSON readJSON;
+    private ArrayList<ArrayList<int[]>> allCardsLeds;
+    private ArrayList<String> infoCod;
+    private Map<Integer, String> intersecciones;
     private String infoRutina;
-    private ArrayList<String> infoCod = new ArrayList<>();
     private boolean dano;
-    ReadJSON readJSON = new ReadJSON();
+    private int idInterseccion;
+    public static int numIntersecciones = 0;
 
-    public Servidor() {
-        puerto = 5000;
-        conectarActivo = true;
-        hiloRutinas = new Thread(this);
+    public InterseccionHilo(Socket c) {
+        host = c;
+        numIntersecciones++;
+        idInterseccion = numIntersecciones;
+        readJSON = new ReadJSON();
+        allCardsLeds = new ArrayList<>();
+        infoCod = new ArrayList<>();
+        intersecciones = new HashMap<>() {{
+            put(0,"resource/datos/data13-41.json");
+            put(1,"resource/datos/data34-38.json");
+            put(2,"resource/datos/data80-43.json");
+        }};
     }
 
     public String leerConfiguracion() {
         // Leer configuracion
         String config = "";
         try {
-            readJSON.readFile("src/datos/data80-43.json");
+            readJSON.readFile(intersecciones.get(idInterseccion));
             config = readJSON.getPrimerMensaje();
         } catch (Exception e) {
             e.printStackTrace();
@@ -118,7 +126,7 @@ public class Servidor implements Runnable {
             String cod = buscarCodigo(iterator, seg);
             if (!"".equals(cod)) {
                 cod = cod.replaceAll("^(\\d*)", Integer.toString(i + 1));
-                                if (infoCod.size() >= i+1) {
+                if (infoCod.size() >= i+1) {
                     infoCod.set(i, cod);
                 } else {
                     infoCod.add(cod);
@@ -165,24 +173,21 @@ public class Servidor implements Runnable {
             String cod = buscarCodigo(iterator, seg);
             if (!"".equals(cod)) {
                 cod = cod.replaceAll("^(\\d*)", Integer.toString(i + 1));
-                                if (infoCod.size() >= i+1) {
+                if (infoCod.size() >= i+1) {
                     infoCod.set(i, cod);
                 } else {
                     infoCod.add(cod);
                 }
             }
-
             if (i == 0) {
                 dato += infoCod.get(i);
             } else {
                 dato += "-" + infoCod.get(i);
             }
         }
-
         if (!dato.equals("")) {
             infoRutina = dato;
         }
-
         // Enviar y recibir
         String cantLedsFuncionando;
         try {
@@ -191,7 +196,6 @@ public class Servidor implements Runnable {
             System.out.println("Error en el envio de la rutina de desconexion");
             throw new RuntimeException(e);
         }
-
         try {
             cantLedsFuncionando = datosEntrada.readUTF();
         } catch (IOException e) {
@@ -221,30 +225,12 @@ public class Servidor implements Runnable {
         int i = 0;
         while (iterator.hasNext()) {
             String codigo = iterator.next().toString();
-            String codigoArr[] = codigo.split(":");
+            String[] codigoArr = codigo.split(":");
             if (number.equals(codigoArr[0])) {
                 return codigo;
             }
         }
         return "";
-    }
-
-    public void conectar() {
-        try {
-            // Crear el servidor
-            server = new ServerSocket(puerto);
-            // Esperar a que alguien se conecte
-            cliente = server.accept();
-            // Alguien se conectó - se capturan flujos
-            datosEntrada = new DataInputStream(cliente.getInputStream());
-            datosSalida = new DataOutputStream(cliente.getOutputStream());
-
-            transmitirConfiguracionInicial();
-            hiloRutinas.start();
-        } catch (IOException e) {
-            System.out.println("Error en la conexion");
-            throw new RuntimeException(e);
-        }
     }
 
     public void transmitirConfiguracionInicial() {
@@ -276,18 +262,6 @@ public class Servidor implements Runnable {
             ledsInt[j] = Integer.parseInt(leds[i]);
         }
     }
-
-    public void desconectar() {
-        try {
-            datosSalida.close();
-            server.close();
-            System.out.println("Conexion terminada");
-        } catch (IOException e) {
-            System.out.println("Error en la desconexion");
-            throw new RuntimeException(e);
-        }
-    }
-
     private void delay(int mls) {
         try {
             Thread.sleep(mls);
@@ -296,44 +270,64 @@ public class Servidor implements Runnable {
         }
     }
 
+    public void desconectar() {
+        try {
+            datosSalida.close();
+            datosEntrada.close();
+            System.out.println("Flujos terminados");
+        } catch (IOException e) {
+            System.out.println("Error en el cierre de flujos");
+            throw new RuntimeException(e);
+        }
+    }
+
     @Override
     public void run() {
-        int mls = 1000;
-        int seg = 0;
-        // Rutina de conexion
-        Long tiempoRutina = readJSON.getTiempoRutinaConexion();
-        for (int i = 0; i < tiempoRutina; i++) {
-            System.err.println("Seg: " + seg);
-            if (dano) {
-                enviarRutinaDano();
-            } else {
-                enviarRutinaConexion(Integer.toString(i));
-            }
-            delay(mls);
-            seg++;
-        }
+        try {
+            // Capturo el flujo de salida y lo asocio al dato de salida
+            datosEntrada = new DataInputStream(host.getInputStream());
+            datosSalida = new DataOutputStream(host.getOutputStream());
 
-        // Rutina normal
-        tiempoRutina = readJSON.getTiempoRutina();
-        while (true) {
+            transmitirConfiguracionInicial();
+            int mls = 1000;
+            int seg = 0;
+            // Rutina de conexion
+            Long tiempoRutina = readJSON.getTiempoRutinaConexion();
             for (int i = 0; i < tiempoRutina; i++) {
                 System.err.println("Seg: " + seg);
                 if (dano) {
                     enviarRutinaDano();
                 } else {
-                    enviarRutinaNormal(Integer.toString(i));
+                    enviarRutinaConexion(Integer.toString(i));
                 }
                 delay(mls);
                 seg++;
             }
+
+            // Rutina normal
+            tiempoRutina = readJSON.getTiempoRutina();
+            while (true) {
+                for (int i = 0; i < tiempoRutina; i++) {
+                    System.err.println("Seg: " + seg);
+                    if (dano) {
+                        enviarRutinaDano();
+                    } else {
+                        enviarRutinaNormal(Integer.toString(i));
+                    }
+                    delay(mls);
+                    seg++;
+                }
+            }
+
+            // Rutina de desconexion
+            /*tiempoRutina = readJSON.getTiempoRutinaDesconexion();
+            for (int i = 0; i < tiempoRutina; i++) {
+                enviarRutinaDesconexion(Integer.toString(i));
+                delay(mls);
+            }*/
+        } catch (IOException ex) {
+        } finally {
+            desconectar();
         }
-
-        // Rutina de desconexion
-        /*tiempoRutina = readJSON.getTiempoRutinaDesconexion();
-        for (int i = 0; i < tiempoRutina; i++) {
-            enviarRutinaDesconexion(Integer.toString(i));
-            delay(mls);
-        }*/
     }
-
 }

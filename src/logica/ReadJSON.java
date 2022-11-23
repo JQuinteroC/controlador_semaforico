@@ -1,4 +1,4 @@
-package src;
+package logica;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
